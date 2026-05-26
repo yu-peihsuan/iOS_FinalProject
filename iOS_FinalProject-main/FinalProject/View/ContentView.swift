@@ -50,7 +50,7 @@ extension ContentView {
 
     private var headerSection: some View {
 
-        ZStack(alignment: .topTrailing) {
+        ZStack(alignment: .top) {
 
             VStack(spacing: 8) {
 
@@ -69,11 +69,22 @@ extension ContentView {
             .multilineTextAlignment(.center)
             .padding(.bottom, 4)
 
-            NavigationLink(destination: FavoritesView()) {
-                Image(systemName: "heart.circle.fill")
-                    .font(.system(size: 30))
-                    .foregroundStyle(accent)
-                    .padding(.top, 8)
+            HStack {
+                NavigationLink(destination: HistoryView()) {
+                    Image(systemName: "clock.arrow.circlepath")
+                        .font(.system(size: 24))
+                        .foregroundStyle(accent)
+                        .padding(.top, 8)
+                }
+
+                Spacer()
+
+                NavigationLink(destination: FavoritesView()) {
+                    Image(systemName: "heart.circle.fill")
+                        .font(.system(size: 30))
+                        .foregroundStyle(accent)
+                        .padding(.top, 8)
+                }
             }
         }
     }

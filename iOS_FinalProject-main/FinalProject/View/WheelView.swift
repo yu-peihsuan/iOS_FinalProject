@@ -359,7 +359,9 @@ struct WheelView: View {
 
         Task {
             try? await Task.sleep(for: .seconds(4))
-            selectedRestaurant = restaurants[targetIndex]
+            let result = restaurants[targetIndex]
+            selectedRestaurant = result
+            store.addToHistory(result)
             isSpinning = false
             withAnimation {
                 showResult = true

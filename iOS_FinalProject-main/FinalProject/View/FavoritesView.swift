@@ -3,6 +3,7 @@ import SwiftUI
 struct FavoritesView: View {
     @Environment(FavoritesStore.self) private var store
     @State private var showAddSheet = false
+    @State private var editingRestaurant: Restaurant? = nil
 
     private let accent = Color(red: 1.0, green: 0.38, blue: 0.18)
 
@@ -36,6 +37,10 @@ struct FavoritesView: View {
         }
         .sheet(isPresented: $showAddSheet) {
             AddRestaurantView()
+                .environment(store)
+        }
+        .sheet(item: $editingRestaurant) { restaurant in
+            RestaurantNoteSheet(restaurant: restaurant)
                 .environment(store)
         }
     }
@@ -124,14 +129,32 @@ struct FavoritesView: View {
                 .background(accent.opacity(0.1))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
-            VStack(alignment: .leading, spacing: 3) {
-                Text(restaurant.name)
-                    .font(.subheadline)
-                    .fontWeight(.semibold)
-                Text(restaurant.category)
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
+            Button {
+                editingRestaurant = restaurant
+            } label: {
+                VStack(alignment: .leading, spacing: 3) {
+                    Text(restaurant.name)
+                        .font(.subheadline)
+                        .fontWeight(.semibold)
+                        .foregroundStyle(.primary)
+
+                    if restaurant.note.isEmpty {
+                        Text(restaurant.category)
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    } else {
+                        HStack(spacing: 4) {
+                            Image(systemName: "note.text")
+                                .font(.caption2)
+                            Text(restaurant.note)
+                                .font(.caption)
+                                .lineLimit(1)
+                        }
+                        .foregroundStyle(accent.opacity(0.8))
+                    }
+                }
             }
+            .buttonStyle(.plain)
 
             Spacer()
 
