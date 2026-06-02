@@ -1,6 +1,7 @@
 import SwiftUI
 
 struct FavoritesView: View {
+    @Environment(\.openURL) private var openURL
     @Environment(FavoritesStore.self) private var store
     @State private var showAddSheet = false
     @State private var editingRestaurant: Restaurant? = nil
@@ -158,6 +159,15 @@ struct FavoritesView: View {
 
             Spacer()
 
+            Button {
+                openGoogleMaps(for: restaurant)
+            } label: {
+                Image(systemName: "map")
+                    .font(.title3)
+                    .foregroundStyle(accent)
+            }
+            .buttonStyle(.plain)
+
             if showToggle {
                 let isWanted = store.isWantToEat(restaurant)
                 Button {
@@ -171,6 +181,12 @@ struct FavoritesView: View {
             }
         }
         .padding(.vertical, 4)
+    }
+
+    private func openGoogleMaps(for restaurant: Restaurant) {
+        if let url = restaurant.googleMapsSearchURL {
+            openURL(url)
+        }
     }
 }
 

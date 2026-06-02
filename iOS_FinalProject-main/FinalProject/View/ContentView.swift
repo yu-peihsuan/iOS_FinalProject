@@ -12,7 +12,9 @@ struct ContentView: View {
         ("日式", "🍱"), ("台式", "🥢"),
         ("韓式", "🌶️"), ("美式", "🍔"),
         ("義式", "🍝"), ("火鍋", "🫕"),
-        ("拉麵", "🍜"), ("手搖飲", "🧋")
+        ("拉麵", "🍜"), ("手搖飲", "🧋"),
+        ("港式", "🥠"), ("泰式", "🍛"),
+        ("素食", "🥗"), ("甜點", "🧁")
     ]
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
     private let accent = Color(red: 1.0, green: 0.38, blue: 0.18)
@@ -261,7 +263,7 @@ extension ContentView {
 
     private var spinButton: some View {
 
-        NavigationLink(destination: WheelView()) {
+        NavigationLink(destination: WheelView(selectedCategories: selectedCategories)) {
 
             HStack(spacing: 10) {
 

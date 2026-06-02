@@ -1,57 +1,43 @@
 import SwiftUI
 
-// MARK: - Wheel Slice Shape
-
-struct WheelSlice: Shape {
-
-    var startAngle: Angle
-    var endAngle: Angle
-
-    func path(in rect: CGRect) -> Path {
-        var path = Path()
-        let center = CGPoint(x: rect.midX, y: rect.midY)
-        let radius = min(rect.width, rect.height) / 2
-        path.move(to: center)
-        path.addArc(
-            center: center,
-            radius: radius,
-            startAngle: startAngle,
-            endAngle: endAngle,
-            clockwise: false
-        )
-        path.closeSubpath()
-        return path
-    }
-}
-
 // MARK: - WheelView
 
 struct WheelView: View {
 
     @Environment(\.dismiss) private var dismiss
+    @Environment(\.openURL) private var openURL
     @Environment(FavoritesStore.self) private var store
 
+    let selectedCategories: Set<String>
+
     private var wheelRestaurants: [Restaurant] {
-        store.wantToEat.isEmpty ? Restaurant.defaults : store.wantToEat
+        let source = store.wantToEat.isEmpty ? Restaurant.defaults : store.wantToEat
+        let filtered = source.filter { selectedCategories.contains($0.category) }
+
+        if filtered.isEmpty {
+            return Restaurant.defaults.filter { selectedCategories.contains($0.category) }
+        }
+
+        return filtered
     }
 
-    private let segmentColors: [Color] = [
-        Color(red: 1.00, green: 0.45, blue: 0.20),
-        Color(red: 0.97, green: 0.70, blue: 0.10),
-        Color(red: 0.88, green: 0.28, blue: 0.35),
-        Color(red: 1.00, green: 0.55, blue: 0.15),
-        Color(red: 0.78, green: 0.18, blue: 0.44),
-        Color(red: 0.96, green: 0.76, blue: 0.04),
-    ]
-
-    @State private var rotation: Double = 0
     @State private var selectedRestaurant: Restaurant? = nil
     @State private var isSpinning = false
     @State private var showResult = false
     @State private var showCalendarSheet = false
+    @State private var handleRotation: Double = 0
+    @State private var machineOffset: CGFloat = 0
+    @State private var capsuleXOffset: CGFloat = 54
+    @State private var capsuleYOffset: CGFloat = 288
+    @State private var capsuleScale: CGFloat = 0.35
+    @State private var capsuleOpacity: Double = 0
 
-    private let wheelSize: CGFloat = 290
     private let accent = Color(red: 1.0, green: 0.38, blue: 0.18)
+    private let deepRed = Color(red: 0.85, green: 0.22, blue: 0.35)
+    private let gold = Color(red: 0.98, green: 0.72, blue: 0.18)
+    private let teal = Color(red: 0.16, green: 0.60, blue: 0.76)
+    private let bodyWidth: CGFloat = 286
+    private let globeSize: CGFloat = 218
 
     var body: some View {
 
@@ -63,15 +49,13 @@ struct WheelView: View {
 
                 navBar.padding(.top, 10)
 
-                titleSection.padding(.top, 16)
-
-                wheelSection.padding(.top, 28)
+                gachaSection.padding(.top, 4)
 
                 resultSection
-                    .padding(.top, 24)
+                    .padding(.top, 64)
                     .padding(.horizontal, 20)
 
-                Spacer()
+                Spacer(minLength: 12)
 
                 spinButton
                     .padding(.horizontal, 20)
@@ -108,110 +92,252 @@ struct WheelView: View {
         .padding(.horizontal, 20)
     }
 
-    private var titleSection: some View {
+    private var gachaSection: some View {
 
-        VStack(spacing: 6) {
+        ZStack(alignment: .top) {
+            gachaMachine
+                .offset(x: machineOffset)
 
-            Text("美食轉盤")
-                .font(.system(size: 28, weight: .bold, design: .rounded))
-
-            Text(store.wantToEat.isEmpty ? "轉動命運，決定今天的美食！" : "從你的想吃清單隨機選一間！")
-                .font(.subheadline)
-                .foregroundStyle(.secondary)
+            if capsuleOpacity > 0, let restaurant = selectedRestaurant {
+                prizeCapsule(restaurant: restaurant)
+                    .scaleEffect(capsuleScale)
+                    .opacity(capsuleOpacity)
+                    .offset(x: capsuleXOffset, y: capsuleYOffset)
+                    .zIndex(4)
+            }
         }
-        .multilineTextAlignment(.center)
+        .offset(y: -44)
+        .frame(height: 370)
+        .padding(.horizontal, 20)
     }
 
-    private var wheelSection: some View {
+    private var gachaMachine: some View {
 
-        VStack(spacing: 0) {
+        ZStack(alignment: .top) {
+            glassGlobe
+                .frame(width: globeSize, height: globeSize)
+                .offset(y: 0)
+                .zIndex(2)
 
-            // Fixed pointer above wheel
-            Image(systemName: "arrowtriangle.down.fill")
-                .font(.system(size: 28))
-                .foregroundStyle(.white)
-                .shadow(color: .black.opacity(0.3), radius: 3, y: 2)
-                .offset(y: 8)
+            neckRing
+                .frame(width: 142, height: 30)
+                .offset(y: 196)
+                .zIndex(3)
+
+            machineBody
+                .frame(width: bodyWidth, height: 142)
+                .offset(y: 220)
                 .zIndex(1)
 
-            // Rotating wheel
-            ZStack {
-
-                let restaurants = wheelRestaurants
-
-                // Segments + labels
-                ForEach(restaurants.indices, id: \.self) { i in
-
-                    let n = Double(restaurants.count)
-                    let segAngle = 360.0 / n
-                    let startDeg = -90.0 + Double(i) * segAngle
-                    let endDeg = startDeg + segAngle
-                    let midDeg = (startDeg + endDeg) / 2
-                    let midRad = midDeg * .pi / 180.0
-                    let textR = wheelSize / 2 * 0.63
-
-                    // Pie slice
-                    WheelSlice(
-                        startAngle: .degrees(startDeg),
-                        endAngle: .degrees(endDeg)
-                    )
-                    .fill(segmentColors[i % segmentColors.count])
-
-                    // Segment label
-                    Text(restaurants[i].name)
-                        .font(.system(size: 11, weight: .bold))
-                        .foregroundStyle(.white)
-                        .shadow(color: .black.opacity(0.2), radius: 1)
-                        .lineLimit(1)
-                        .rotationEffect(.degrees(midDeg + 90))
-                        .offset(
-                            x: textR * cos(midRad),
-                            y: textR * sin(midRad)
-                        )
-                }
-
-                // Divider lines between segments
-                Path { path in
-                    let restaurants = wheelRestaurants
-                    let n = Double(restaurants.count)
-                    let segAngle = 360.0 / n
-                    let r = wheelSize / 2
-                    let cx = wheelSize / 2
-                    let cy = wheelSize / 2
-                    for i in 0..<restaurants.count {
-                        let angle = (-90.0 + Double(i) * segAngle) * .pi / 180.0
-                        path.move(to: CGPoint(x: cx, y: cy))
-                        path.addLine(to: CGPoint(
-                            x: cx + r * cos(angle),
-                            y: cy + r * sin(angle)
-                        ))
-                    }
-                }
-                .stroke(Color.white.opacity(0.45), lineWidth: 2)
-
-                // Outer border ring
-                Circle()
-                    .stroke(Color.white, lineWidth: 3)
-
-                // Center cap
-                Circle()
-                    .fill(.white)
-                    .frame(width: 56, height: 56)
-                    .shadow(color: .black.opacity(0.12), radius: 5)
-
-                Circle()
-                    .fill(accent)
-                    .frame(width: 44, height: 44)
-
-                Image(systemName: "fork.knife")
-                    .font(.system(size: 18, weight: .semibold))
-                    .foregroundStyle(.white)
-            }
-            .frame(width: wheelSize, height: wheelSize)
-            .rotationEffect(.degrees(rotation))
-            .animation(.easeOut(duration: 4), value: rotation)
-            .shadow(color: .black.opacity(0.2), radius: 20, y: 10)
+            machineBase
+                .frame(width: 318, height: 48)
+                .offset(y: 336)
+                .zIndex(0)
         }
+        .frame(width: 330, height: 370)
+    }
+
+    private var glassGlobe: some View {
+
+        ZStack {
+            Circle()
+                .fill(
+                    RadialGradient(
+                        colors: [Color.white.opacity(0.96), Color(red: 0.73, green: 0.93, blue: 1.0).opacity(0.62)],
+                        center: .topLeading,
+                        startRadius: 8,
+                        endRadius: 170
+                    )
+                )
+                .overlay {
+                    Circle()
+                        .stroke(Color.white, lineWidth: 7)
+                }
+                .overlay {
+                    Circle()
+                        .stroke(teal.opacity(0.18), lineWidth: 2)
+                        .padding(10)
+                }
+                .shadow(color: .black.opacity(0.14), radius: 16, y: 8)
+
+            ForEach(Array(wheelRestaurants.prefix(16).enumerated()), id: \.offset) { index, restaurant in
+                miniCapsule(restaurant: restaurant, index: index)
+            }
+
+            Circle()
+                .fill(Color.white.opacity(0.58))
+                .frame(width: 70, height: 30)
+                .blur(radius: 1.4)
+                .offset(x: -50, y: -64)
+
+            Capsule()
+                .fill(Color.white.opacity(0.36))
+                .frame(width: 30, height: 86)
+                .rotationEffect(.degrees(28))
+                .offset(x: 62, y: -18)
+        }
+        .clipShape(Circle())
+    }
+
+    private var neckRing: some View {
+
+        Capsule()
+            .fill(
+                LinearGradient(
+                    colors: [Color.white, Color(red: 0.92, green: 0.92, blue: 0.88)],
+                    startPoint: .top,
+                    endPoint: .bottom
+                )
+            )
+            .overlay {
+                Capsule()
+                    .stroke(Color.black.opacity(0.08), lineWidth: 1)
+            }
+            .shadow(color: .black.opacity(0.12), radius: 5, y: 3)
+    }
+
+    private var machineBody: some View {
+
+        ZStack {
+            RoundedRectangle(cornerRadius: 26)
+                .fill(
+                    LinearGradient(
+                        colors: [accent, deepRed],
+                        startPoint: .topLeading,
+                        endPoint: .bottomTrailing
+                    )
+                )
+                .overlay(alignment: .top) {
+                    RoundedRectangle(cornerRadius: 24)
+                        .fill(Color.white.opacity(0.14))
+                        .frame(height: 44)
+                        .padding(.horizontal, 8)
+                        .padding(.top, 8)
+                }
+                .shadow(color: deepRed.opacity(0.28), radius: 14, y: 8)
+
+            HStack(spacing: 24) {
+                knob
+                chute
+            }
+            .offset(y: -6)
+
+        }
+    }
+
+    private var knob: some View {
+
+        ZStack {
+            Circle()
+                .fill(Color(red: 0.98, green: 0.98, blue: 0.94))
+                .frame(width: 82, height: 82)
+                .shadow(color: .black.opacity(0.16), radius: 8, y: 4)
+
+            Circle()
+                .fill(gold)
+                .frame(width: 62, height: 62)
+                .overlay {
+                    Circle()
+                        .stroke(Color.white.opacity(0.55), lineWidth: 3)
+                }
+
+            RoundedRectangle(cornerRadius: 7)
+                .fill(.white.opacity(0.92))
+                .frame(width: 50, height: 12)
+                .shadow(color: .black.opacity(0.12), radius: 2, y: 1)
+                .rotationEffect(.degrees(handleRotation))
+        }
+    }
+
+    private var chute: some View {
+
+        ZStack(alignment: .bottom) {
+            RoundedRectangle(cornerRadius: 14)
+                .fill(Color.black.opacity(0.18))
+                .frame(width: 96, height: 68)
+                .overlay {
+                    RoundedRectangle(cornerRadius: 12)
+                        .stroke(Color.white.opacity(0.38), lineWidth: 2)
+                        .padding(5)
+                }
+
+            RoundedRectangle(cornerRadius: 9)
+                .fill(Color(red: 0.24, green: 0.18, blue: 0.18))
+                .frame(width: 78, height: 30)
+                .overlay(alignment: .top) {
+                    RoundedRectangle(cornerRadius: 6)
+                        .fill(Color.white.opacity(0.16))
+                        .frame(height: 8)
+                }
+                .padding(.bottom, 9)
+        }
+    }
+
+    private var machineBase: some View {
+
+        RoundedRectangle(cornerRadius: 17)
+            .fill(Color(red: 0.34, green: 0.25, blue: 0.25))
+            .overlay(alignment: .top) {
+                RoundedRectangle(cornerRadius: 16)
+                    .fill(Color.white.opacity(0.12))
+                    .frame(height: 16)
+                    .padding(.horizontal, 8)
+                    .padding(.top, 6)
+            }
+            .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
+    }
+
+    private func miniCapsule(restaurant: Restaurant, index: Int) -> some View {
+        let positions: [CGPoint] = [
+            CGPoint(x: -62, y: 44), CGPoint(x: -22, y: 58), CGPoint(x: 24, y: 48),
+            CGPoint(x: 62, y: 30), CGPoint(x: -66, y: 4), CGPoint(x: -18, y: 14),
+            CGPoint(x: 30, y: 2), CGPoint(x: 66, y: -12), CGPoint(x: -66, y: -38),
+            CGPoint(x: -24, y: -54), CGPoint(x: 20, y: -48), CGPoint(x: 58, y: -54),
+            CGPoint(x: -2, y: -16), CGPoint(x: -42, y: 84), CGPoint(x: 42, y: 78),
+            CGPoint(x: 0, y: 86)
+        ]
+        let point = positions[index % positions.count]
+        let angle = Double((index * 23) % 52) - 26
+
+        return ZStack {
+            Capsule()
+                .fill(capsuleColor(for: index).opacity(0.94))
+                .frame(width: 48, height: 32)
+
+            Capsule()
+                .fill(Color.white.opacity(0.18))
+                .frame(width: 48, height: 15)
+                .offset(y: -8)
+
+            Text(restaurant.emoji)
+                .font(.system(size: 15))
+        }
+        .rotationEffect(.degrees(angle))
+        .offset(x: point.x, y: point.y)
+    }
+
+    private func prizeCapsule(restaurant: Restaurant) -> some View {
+
+        ZStack {
+            Capsule()
+                .fill(gold)
+                .frame(width: 66, height: 46)
+
+            Capsule()
+                .fill(accent.opacity(0.96))
+                .frame(width: 66, height: 23)
+                .offset(y: 11.5)
+
+            Capsule()
+                .stroke(.white.opacity(0.72), lineWidth: 2)
+                .frame(width: 66, height: 46)
+
+            Text(restaurant.emoji)
+                .font(.system(size: 20))
+                .offset(y: -2)
+        }
+        .frame(width: 72, height: 52)
+        .shadow(color: .black.opacity(0.18), radius: 10, y: 6)
     }
 
     private var resultSection: some View {
@@ -222,7 +348,6 @@ struct WheelView: View {
 
                 VStack(spacing: 12) {
 
-                    // Result card
                     VStack(spacing: 8) {
 
                         Text("今天就吃")
@@ -235,10 +360,13 @@ struct WheelView: View {
                             Text(restaurant.name)
                                 .font(.system(size: 28, weight: .bold, design: .rounded))
                                 .foregroundStyle(accent)
+                                .lineLimit(1)
+                                .minimumScaleFactor(0.7)
                         }
 
-                        Text("祝你用餐愉快！🎉")
+                        Text(restaurant.category)
                             .font(.footnote)
+                            .fontWeight(.semibold)
                             .foregroundStyle(.secondary)
                     }
                     .frame(maxWidth: .infinity)
@@ -247,7 +375,21 @@ struct WheelView: View {
                     .clipShape(RoundedRectangle(cornerRadius: 20))
                     .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
 
-                    // Action buttons
+                    Button {
+                        openGoogleMaps(for: restaurant)
+                    } label: {
+                        Label("在 Google Maps 查看", systemImage: "map.fill")
+                            .font(.subheadline)
+                            .fontWeight(.semibold)
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 12)
+                            .background(Color.white)
+                            .foregroundStyle(accent)
+                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .shadow(color: .black.opacity(0.06), radius: 6, y: 3)
+                    }
+                    .buttonStyle(.plain)
+
                     HStack(spacing: 12) {
 
                         let isFav = store.isFavorite(restaurant)
@@ -290,7 +432,7 @@ struct WheelView: View {
 
             } else {
 
-                Color.clear.frame(height: 140)
+                Color.clear.frame(height: 142)
             }
         }
         .animation(.spring(response: 0.5, dampingFraction: 0.75), value: showResult)
@@ -307,11 +449,11 @@ struct WheelView: View {
                         .tint(.white)
                         .scaleEffect(0.85)
                 } else {
-                    Image(systemName: "arrow.clockwise.circle.fill")
+                    Image(systemName: "sparkles")
                         .font(.title3)
                 }
 
-                Text(isSpinning ? "旋轉中..." : (showResult ? "再轉一次" : "開始旋轉"))
+                Text(isSpinning ? "抽選中..." : (showResult ? "再抽一顆" : "抽一顆扭蛋"))
                     .font(.title3)
                     .fontWeight(.bold)
             }
@@ -326,10 +468,7 @@ struct WheelView: View {
                     RoundedRectangle(cornerRadius: 18)
                         .fill(
                             LinearGradient(
-                                colors: [
-                                    accent,
-                                    Color(red: 0.85, green: 0.22, blue: 0.35)
-                                ],
+                                colors: [accent, deepRed],
                                 startPoint: .leading,
                                 endPoint: .trailing
                             )
@@ -342,25 +481,55 @@ struct WheelView: View {
                 y: 5
             )
         }
-        .disabled(isSpinning)
+        .disabled(isSpinning || wheelRestaurants.isEmpty)
         .buttonStyle(.plain)
     }
 
     // MARK: - Logic
 
+    private func openGoogleMaps(for restaurant: Restaurant) {
+        if let url = restaurant.googleMapsSearchURL {
+            openURL(url)
+        }
+    }
+
     private func spinWheel() {
+
+        let restaurants = wheelRestaurants
+        guard let result = restaurants.randomElement() else { return }
 
         isSpinning = true
         showResult = false
+        selectedRestaurant = result
+        capsuleXOffset = 54
+        capsuleYOffset = 288
+        capsuleScale = 0.35
+        capsuleOpacity = 0
 
-        let restaurants = wheelRestaurants
-        let targetIndex = Int.random(in: 0..<restaurants.count)
-        rotation += Double.random(in: 1440...2160)
+        Task { @MainActor in
+            withAnimation(.easeInOut(duration: 0.1).repeatCount(8, autoreverses: true)) {
+                machineOffset = 6
+            }
+            withAnimation(.easeInOut(duration: 0.75)) {
+                handleRotation += 360
+            }
 
-        Task {
-            try? await Task.sleep(for: .seconds(4))
-            let result = restaurants[targetIndex]
-            selectedRestaurant = result
+            try? await Task.sleep(for: .milliseconds(760))
+            machineOffset = 0
+
+            withAnimation(.spring(response: 0.42, dampingFraction: 0.72)) {
+                capsuleOpacity = 1
+                capsuleScale = 1
+                capsuleYOffset = 296
+            }
+
+            try? await Task.sleep(for: .milliseconds(520))
+            withAnimation(.easeOut(duration: 0.22)) {
+                capsuleOpacity = 0
+                capsuleScale = 0.9
+            }
+
+            try? await Task.sleep(for: .milliseconds(120))
             store.addToHistory(result)
             isSpinning = false
             withAnimation {
@@ -368,9 +537,21 @@ struct WheelView: View {
             }
         }
     }
+
+    private func capsuleColor(for index: Int) -> Color {
+        let colors: [Color] = [
+            accent,
+            gold,
+            deepRed,
+            teal,
+            Color(red: 0.34, green: 0.68, blue: 0.38),
+            Color(red: 0.56, green: 0.34, blue: 0.78)
+        ]
+        return colors[index % colors.count]
+    }
 }
 
 #Preview {
-    WheelView()
+    WheelView(selectedCategories: ["日式", "台式"])
         .environment(FavoritesStore())
 }
