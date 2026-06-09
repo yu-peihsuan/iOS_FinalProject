@@ -9,7 +9,7 @@ struct AddRestaurantView: View {
     @State private var selectedPriceLevel: Int = 2
     @State private var selectedMealTypes: Set<String> = ["午餐", "晚餐"]
 
-    private let accent = Color(red: 1.0, green: 0.38, blue: 0.18)
+    private let accent = Color(red: 0.55, green: 0.42, blue: 0.32)
     private let mealOptions = ["早餐", "午餐", "晚餐", "點心"]
 
     private let categories: [(name: String, emoji: String)] = [

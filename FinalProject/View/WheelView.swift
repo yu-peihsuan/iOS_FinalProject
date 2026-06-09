@@ -64,10 +64,10 @@ struct WheelView: View {
     @State private var capsuleScale: CGFloat = 0.35
     @State private var capsuleOpacity: Double = 0
 
-    private let accent = Color(red: 1.0, green: 0.38, blue: 0.18)
-    private let deepRed = Color(red: 0.85, green: 0.22, blue: 0.35)
-    private let gold = Color(red: 0.98, green: 0.72, blue: 0.18)
-    private let teal = Color(red: 0.16, green: 0.60, blue: 0.76)
+    private let accent = Color(red: 0.55, green: 0.42, blue: 0.32)
+    private let deepRed = Color(red: 0.62, green: 0.42, blue: 0.44)
+    private let gold = Color(red: 0.78, green: 0.68, blue: 0.50)
+    private let teal = Color(red: 0.36, green: 0.50, blue: 0.38)
     private let bodyWidth: CGFloat = 286
     private let globeSize: CGFloat = 218
 
@@ -75,7 +75,7 @@ struct WheelView: View {
 
         ZStack {
 
-            Color(red: 0.99, green: 0.97, blue: 0.94).ignoresSafeArea()
+            Color(red: 0.98, green: 0.96, blue: 0.92).ignoresSafeArea()
 
             VStack(spacing: 0) {
 
@@ -142,10 +142,11 @@ struct WheelView: View {
             } label: {
                 HStack(spacing: 6) {
                     Image(systemName: "chevron.left")
-                        .fontWeight(.semibold)
+                        .font(.system(size: 14, weight: .light))
                     Text("返回")
+                        .font(.system(size: 14, weight: .regular))
                 }
-                .foregroundStyle(accent)
+                .foregroundStyle(Color(red: 0.28, green: 0.26, blue: 0.24))
             }
 
             Spacer()
@@ -423,29 +424,33 @@ struct WheelView: View {
                     VStack(spacing: 8) {
 
                         Text("今天就吃")
-                            .font(.subheadline)
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 14, weight: .medium))
+                            .foregroundStyle(Color(red: 0.55, green: 0.42, blue: 0.32))
+                            .tracking(2)
 
-                        HStack(spacing: 8) {
-                            Text(restaurant.emoji)
-                                .font(.title2)
-                            Text(restaurant.name)
-                                .font(.system(size: 28, weight: .bold, design: .rounded))
-                                .foregroundStyle(accent)
-                                .lineLimit(1)
-                                .minimumScaleFactor(0.7)
-                        }
+                        Text(restaurant.name)
+                            .font(.system(size: 30, weight: .bold))
+                            .foregroundStyle(Color(red: 0.28, green: 0.26, blue: 0.24))
+                            .lineLimit(1)
+                            .minimumScaleFactor(0.7)
+
+                        Rectangle()
+                            .fill(Color(red: 0.82, green: 0.76, blue: 0.68))
+                            .frame(width: 30, height: 1)
 
                         Text(restaurant.category)
-                            .font(.footnote)
-                            .fontWeight(.semibold)
-                            .foregroundStyle(.secondary)
+                            .font(.system(size: 15, weight: .medium))
+                            .foregroundStyle(Color(red: 0.55, green: 0.42, blue: 0.32))
+                            .tracking(1)
                     }
                     .frame(maxWidth: .infinity)
-                    .padding(.vertical, 18)
-                    .background(.white)
-                    .clipShape(RoundedRectangle(cornerRadius: 20))
-                    .shadow(color: .black.opacity(0.08), radius: 12, y: 4)
+                    .padding(.vertical, 22)
+                    .background(Color.white)
+                    .clipShape(RoundedRectangle(cornerRadius: 14))
+                    .overlay {
+                        RoundedRectangle(cornerRadius: 14)
+                            .stroke(Color(red: 0.88, green: 0.82, blue: 0.74), lineWidth: 1)
+                    }
 
                     Button {
                         openGoogleMaps(for: restaurant)
@@ -538,26 +543,20 @@ struct WheelView: View {
                         .font(.title3)
                 }
 
-                Text(isLoadingNearby ? "搜尋附近餐廳..." : wheelRestaurants.isEmpty ? (useFixedMode ? "清單是空的" : "找不到附近餐廳") : (isSpinning ? "抽選中..." : (showResult ? "再抽一顆" : "抽一顆扭蛋")))
-                    .font(.title3)
-                    .fontWeight(.bold)
+                Text(isLoadingNearby ? "搜尋中..." : wheelRestaurants.isEmpty ? (useFixedMode ? "清單是空的" : "找不到餐廳") : (isSpinning ? "抽選中..." : (showResult ? "再抽一次" : "開始抽選")))
+                    .font(.system(size: 18, weight: .semibold))
+                    .tracking(2)
             }
             .foregroundStyle(.white)
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background {
                 if isSpinning || isLoadingNearby {
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(Color.gray)
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(Color.gray.opacity(0.4))
                 } else {
-                    RoundedRectangle(cornerRadius: 18)
-                        .fill(
-                            LinearGradient(
-                                colors: [accent, deepRed],
-                                startPoint: .leading,
-                                endPoint: .trailing
-                            )
-                        )
+                    RoundedRectangle(cornerRadius: 12)
+                        .fill(accent)
                 }
             }
             .shadow(
@@ -580,11 +579,11 @@ struct WheelView: View {
 
     private func shareText(for restaurant: Restaurant) -> String {
         let price = String(repeating: "$", count: restaurant.priceLevel)
-        var text = "🎰 今天吃什麼？扭蛋抽到了！\n\n"
-        text += "\(restaurant.emoji) \(restaurant.name)\n"
-        text += "📂 \(restaurant.category)　💰 \(price)\n"
+        var text = "今天吃什麼？扭蛋抽到了！\n\n"
+        text += "\(restaurant.name)\n"
+        text += "\(restaurant.category) / \(price)\n"
         if let url = restaurant.googleMapsSearchURL {
-            text += "\n📍 \(url.absoluteString)"
+            text += "\n\(url.absoluteString)"
         }
         return text
     }
@@ -669,12 +668,12 @@ struct WheelView: View {
 
     private func capsuleColor(for index: Int) -> Color {
         let colors: [Color] = [
-            accent,
-            gold,
-            deepRed,
-            teal,
-            Color(red: 0.34, green: 0.68, blue: 0.38),
-            Color(red: 0.56, green: 0.34, blue: 0.78)
+            Color(red: 0.76, green: 0.58, blue: 0.60),
+            Color(red: 0.88, green: 0.78, blue: 0.62),
+            Color(red: 0.72, green: 0.58, blue: 0.46),
+            Color(red: 0.56, green: 0.68, blue: 0.58),
+            Color(red: 0.68, green: 0.64, blue: 0.72),
+            Color(red: 0.82, green: 0.72, blue: 0.66)
         ]
         return colors[index % colors.count]
     }

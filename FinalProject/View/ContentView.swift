@@ -17,7 +17,13 @@ struct ContentView: View {
         ("素食", "🥗"), ("甜點", "🧁")
     ]
     private let columns = [GridItem(.flexible()), GridItem(.flexible())]
-    private let accent = Color(red: 1.0, green: 0.38, blue: 0.18)
+
+    private let warm = Color(red: 0.55, green: 0.42, blue: 0.32)
+    private let sage = Color(red: 0.36, green: 0.50, blue: 0.38)
+    private let dusty = Color(red: 0.62, green: 0.42, blue: 0.44)
+    private let sand = Color(red: 0.82, green: 0.76, blue: 0.68)
+    private let cream = Color(red: 0.98, green: 0.96, blue: 0.92)
+    private let stone = Color(red: 0.28, green: 0.26, blue: 0.24)
 
     var body: some View {
 
@@ -25,11 +31,11 @@ struct ContentView: View {
 
             ZStack {
 
-                Color(red: 0.99, green: 0.97, blue: 0.94).ignoresSafeArea()
+                cream.ignoresSafeArea()
 
                 ScrollView(showsIndicators: false) {
 
-                    VStack(spacing: 16) {
+                    VStack(spacing: 18) {
 
                         headerSection
                         mealSection
@@ -37,7 +43,7 @@ struct ContentView: View {
                         filterSection
                         spinButton
                     }
-                    .padding(.horizontal, 20)
+                    .padding(.horizontal, 24)
                     .padding(.bottom, 32)
                 }
             }
@@ -54,37 +60,31 @@ extension ContentView {
 
         ZStack(alignment: .top) {
 
-            VStack(spacing: 8) {
-
-                Text("🍽️")
-                    .font(.system(size: 64))
-                    .padding(.top, 32)
+            VStack(spacing: 12) {
 
                 Text("今天吃什麼？")
-                    .font(.system(size: 32, weight: .bold, design: .rounded))
+                    .font(.system(size: 32, weight: .bold))
+                    .foregroundStyle(stone)
+                    .padding(.top, 20)
 
-                Text("設定你的偏好，讓系統幫你決定！")
-                    .font(.subheadline)
-                    .foregroundStyle(.secondary)
             }
             .frame(maxWidth: .infinity)
             .multilineTextAlignment(.center)
-            .padding(.bottom, 4)
 
             HStack {
                 NavigationLink(destination: HistoryView()) {
-                    Image(systemName: "clock.arrow.circlepath")
-                        .font(.system(size: 24))
-                        .foregroundStyle(accent)
+                    Image(systemName: "clock")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundStyle(warm)
                         .padding(.top, 8)
                 }
 
                 Spacer()
 
                 NavigationLink(destination: FavoritesView()) {
-                    Image(systemName: "heart.circle.fill")
-                        .font(.system(size: 30))
-                        .foregroundStyle(accent)
+                    Image(systemName: "heart")
+                        .font(.system(size: 18, weight: .light))
+                        .foregroundStyle(dusty)
                         .padding(.top, 8)
                 }
             }
@@ -93,221 +93,192 @@ extension ContentView {
 
     private var mealSection: some View {
 
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
 
-            Label("用餐時段", systemImage: "clock.fill")
-                .font(.headline)
-                .foregroundStyle(accent)
+            Text("用餐時段")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(warm)
+                .tracking(2)
 
-            HStack(spacing: 8) {
+            HStack(spacing: 0) {
 
-                ForEach(meals, id: \.self) { meal in
+                ForEach(Array(meals.enumerated()), id: \.element) { index, meal in
 
                     Button {
-                        selectedMeal = meal
+                        withAnimation(.easeInOut(duration: 0.25)) {
+                            selectedMeal = meal
+                        }
                     } label: {
                         Text(meal)
-                            .font(.subheadline)
-                            .fontWeight(.semibold)
+                            .font(.system(size: 16, weight: selectedMeal == meal ? .medium : .regular))
                             .frame(maxWidth: .infinity)
-                            .padding(.vertical, 12)
-                            .background(
-                                selectedMeal == meal
-                                ? accent
-                                : Color.gray.opacity(0.08)
-                            )
-                            .foregroundStyle(
-                                selectedMeal == meal ? .white : .primary
-                            )
-                            .clipShape(RoundedRectangle(cornerRadius: 14))
+                            .padding(.vertical, 14)
+                            .foregroundStyle(selectedMeal == meal ? .white : stone)
+                            .background(selectedMeal == meal ? warm : Color.clear)
                     }
                     .buttonStyle(.plain)
+
+                    if index < meals.count - 1 {
+                        Rectangle()
+                            .fill(sand)
+                            .frame(width: 1)
+                            .padding(.vertical, 8)
+                    }
                 }
             }
+            .background(Color.white)
+            .clipShape(RoundedRectangle(cornerRadius: 12))
+            .overlay {
+                RoundedRectangle(cornerRadius: 12)
+                    .stroke(sand, lineWidth: 1)
+            }
         }
-        .padding(18)
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
     }
 
     private var categorySection: some View {
 
-        VStack(alignment: .leading, spacing: 14) {
+        VStack(alignment: .leading, spacing: 12) {
 
             HStack {
-
-                Label("食物類別", systemImage: "fork.knife")
-                    .font(.headline)
-                    .foregroundStyle(accent)
+                Text("食物類別")
+                    .font(.system(size: 16, weight: .medium))
+                    .foregroundStyle(warm)
+                    .tracking(2)
 
                 Spacer()
 
-                Text("可多選")
-                    .font(.caption)
-                    .foregroundStyle(.secondary)
-                    .padding(.horizontal, 8)
-                    .padding(.vertical, 4)
-                    .background(Color.gray.opacity(0.08))
-                    .clipShape(Capsule())
+                Text("可複選")
+                    .font(.system(size: 13, weight: .regular))
+                    .foregroundStyle(sand)
+                    .tracking(1)
             }
 
-            LazyVGrid(columns: columns, spacing: 10) {
+            LazyVGrid(columns: columns, spacing: 6) {
 
                 ForEach(categories, id: \.name) { category in
 
                     let isSelected = selectedCategories.contains(category.name)
 
                     Button {
-                        if isSelected {
-                            if selectedCategories.count > 1 {
-                                selectedCategories.remove(category.name)
+                        withAnimation(.easeInOut(duration: 0.2)) {
+                            if isSelected {
+                                if selectedCategories.count > 1 {
+                                    selectedCategories.remove(category.name)
+                                }
+                            } else {
+                                selectedCategories.insert(category.name)
                             }
-                        } else {
-                            selectedCategories.insert(category.name)
                         }
                     } label: {
-                        HStack(spacing: 8) {
-
-                            Text(category.emoji)
-                                .font(.title3)
-
-                            Text(category.name)
-                                .font(.subheadline)
-                                .fontWeight(.medium)
-
-                            Spacer()
-
-                            Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                                .font(.callout)
-                                .foregroundStyle(isSelected ? accent : Color.gray.opacity(0.4))
-                        }
-                        .padding(.horizontal, 14)
-                        .padding(.vertical, 12)
-                        .background(isSelected ? accent.opacity(0.1) : Color.gray.opacity(0.05))
-                        .foregroundStyle(isSelected ? accent : .primary)
-                        .clipShape(RoundedRectangle(cornerRadius: 14))
-                        .overlay {
-                            RoundedRectangle(cornerRadius: 14)
-                                .stroke(
-                                    isSelected ? accent.opacity(0.45) : Color.clear,
-                                    lineWidth: 1.5
-                                )
-                        }
+                        Text(category.name)
+                            .font(.system(size: 15, weight: isSelected ? .medium : .regular))
+                            .frame(maxWidth: .infinity)
+                            .padding(.vertical, 9)
+                            .foregroundStyle(isSelected ? .white : stone)
+                            .background(isSelected ? sage : Color.white)
+                            .clipShape(RoundedRectangle(cornerRadius: 10))
+                            .overlay {
+                                RoundedRectangle(cornerRadius: 10)
+                                    .stroke(isSelected ? sage : sand, lineWidth: 1)
+                            }
                     }
                     .buttonStyle(.plain)
                 }
             }
         }
-        .padding(18)
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
     }
 
     private var filterSection: some View {
 
-        VStack(alignment: .leading, spacing: 20) {
+        VStack(alignment: .leading, spacing: 14) {
 
-            Label("進階篩選", systemImage: "slider.horizontal.3")
-                .font(.headline)
-                .foregroundStyle(accent)
+            Text("進階篩選")
+                .font(.system(size: 16, weight: .medium))
+                .foregroundStyle(warm)
+                .tracking(2)
 
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 12) {
 
                 HStack {
-
                     Text("搜尋距離")
-                        .font(.subheadline)
+                        .font(.system(size: 16))
+                        .foregroundStyle(stone)
 
                     Spacer()
 
-                    Text("\(Int(distance)) 公里")
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundStyle(accent)
+                    Text("\(Int(distance)) km")
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(warm)
                         .monospacedDigit()
                 }
 
                 Slider(value: $distance, in: 1...10, step: 1)
-                    .tint(accent)
+                    .tint(warm)
             }
 
-            Divider()
+            Rectangle()
+                .fill(sand)
+                .frame(height: 1)
 
-            VStack(alignment: .leading, spacing: 10) {
+            VStack(alignment: .leading, spacing: 12) {
 
                 HStack {
                     Text("預算上限")
-                        .font(.subheadline)
+                        .font(.system(size: 16))
+                        .foregroundStyle(stone)
 
                     Spacer()
 
                     Text(priceLevelLabel(maxPriceLevel))
-                        .font(.subheadline)
-                        .fontWeight(.bold)
-                        .foregroundStyle(accent)
+                        .font(.system(size: 16, weight: .medium))
+                        .foregroundStyle(warm)
                 }
 
                 HStack(spacing: 8) {
                     ForEach(1...4, id: \.self) { level in
                         Button {
-                            maxPriceLevel = level
+                            withAnimation(.easeInOut(duration: 0.2)) {
+                                maxPriceLevel = level
+                            }
                         } label: {
                             Text(String(repeating: "$", count: level))
-                                .font(.subheadline)
-                                .fontWeight(.semibold)
+                                .font(.system(size: 15, weight: level <= maxPriceLevel ? .medium : .regular))
                                 .frame(maxWidth: .infinity)
                                 .padding(.vertical, 10)
-                                .background(
-                                    level <= maxPriceLevel
-                                    ? accent
-                                    : Color.gray.opacity(0.08)
-                                )
-                                .foregroundStyle(
-                                    level <= maxPriceLevel ? .white : .primary
-                                )
-                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                                .foregroundStyle(level <= maxPriceLevel ? .white : stone)
+                                .background(level <= maxPriceLevel ? warm : Color.white)
+                                .clipShape(RoundedRectangle(cornerRadius: 8))
+                                .overlay {
+                                    RoundedRectangle(cornerRadius: 8)
+                                        .stroke(level <= maxPriceLevel ? warm : sand, lineWidth: 1)
+                                }
                         }
                         .buttonStyle(.plain)
                     }
                 }
             }
         }
-        .padding(18)
-        .background(.white)
-        .clipShape(RoundedRectangle(cornerRadius: 20))
-        .shadow(color: .black.opacity(0.06), radius: 12, y: 4)
+        .padding(16)
+        .background(Color.white)
+        .clipShape(RoundedRectangle(cornerRadius: 14))
+        .overlay {
+            RoundedRectangle(cornerRadius: 14)
+                .stroke(sand, lineWidth: 1)
+        }
     }
 
     private var spinButton: some View {
 
         NavigationLink(destination: WheelView(selectedCategories: selectedCategories, selectedMeal: selectedMeal, maxPriceLevel: maxPriceLevel, maxDistance: distance)) {
 
-            HStack(spacing: 10) {
-
-                Image(systemName: "sparkles")
-                    .font(.title3)
-
-                Text("開始幫我選！")
-                    .font(.title3)
-                    .fontWeight(.bold)
-            }
-            .foregroundStyle(.white)
-            .frame(maxWidth: .infinity)
-            .padding(.vertical, 18)
-            .background(
-                LinearGradient(
-                    colors: [
-                        accent,
-                        Color(red: 0.85, green: 0.22, blue: 0.35)
-                    ],
-                    startPoint: .leading,
-                    endPoint: .trailing
-                )
-            )
-            .clipShape(RoundedRectangle(cornerRadius: 18))
-            .shadow(color: accent.opacity(0.45), radius: 12, y: 6)
+            Text("開始抽選")
+                .font(.system(size: 18, weight: .semibold))
+                .tracking(4)
+                .foregroundStyle(.white)
+                .frame(maxWidth: .infinity)
+                .padding(.vertical, 18)
+                .background(warm)
+                .clipShape(RoundedRectangle(cornerRadius: 12))
         }
         .buttonStyle(.plain)
     }

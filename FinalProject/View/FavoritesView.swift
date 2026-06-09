@@ -6,11 +6,13 @@ struct FavoritesView: View {
     @State private var showAddSheet = false
     @State private var editingRestaurant: Restaurant? = nil
 
-    private let accent = Color(red: 1.0, green: 0.38, blue: 0.18)
+    private let warm = Color(red: 0.55, green: 0.42, blue: 0.32)
+    private let dusty = Color(red: 0.62, green: 0.42, blue: 0.44)
+    private let sand = Color(red: 0.82, green: 0.76, blue: 0.68)
 
     var body: some View {
         ZStack {
-            Color(red: 0.99, green: 0.97, blue: 0.94).ignoresSafeArea()
+            Color(red: 0.98, green: 0.96, blue: 0.92).ignoresSafeArea()
 
             if store.favorites.isEmpty {
                 emptyState
@@ -32,7 +34,7 @@ struct FavoritesView: View {
                 } label: {
                     Image(systemName: "plus")
                         .fontWeight(.semibold)
-                        .foregroundStyle(accent)
+                        .foregroundStyle(warm)
                 }
             }
         }
@@ -50,11 +52,11 @@ struct FavoritesView: View {
 
     private var emptyState: some View {
         VStack(spacing: 20) {
-            Text("💫")
-                .font(.system(size: 64))
+            Image(systemName: "heart")
+                .font(.system(size: 48, weight: .ultraLight))
+                .foregroundStyle(dusty)
             Text("還沒有最愛的餐廳")
-                .font(.title3)
-                .fontWeight(.bold)
+                .font(.system(size: 18, weight: .light))
             Text("點右上角 + 新增餐廳\n或從轉盤結果加入最愛")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -67,7 +69,7 @@ struct FavoritesView: View {
                     .foregroundStyle(.white)
                     .padding(.horizontal, 28)
                     .padding(.vertical, 14)
-                    .background(accent)
+                    .background(warm)
                     .clipShape(Capsule())
             }
         }
@@ -81,11 +83,7 @@ struct FavoritesView: View {
                     ZStack {
                         Circle()
                             .fill(
-                                LinearGradient(
-                                    colors: [accent, Color(red: 0.85, green: 0.22, blue: 0.35)],
-                                    startPoint: .topLeading,
-                                    endPoint: .bottomTrailing
-                                )
+                                warm
                             )
                             .frame(width: 44, height: 44)
                         Image(systemName: "sparkles")
@@ -94,8 +92,7 @@ struct FavoritesView: View {
                     }
                     VStack(alignment: .leading, spacing: 2) {
                         Text("從最愛抽扭蛋")
-                            .font(.subheadline)
-                            .fontWeight(.bold)
+                            .font(.system(size: 15, weight: .medium))
                         Text("從 \(store.favorites.count) 間最愛餐廳中隨機抽選")
                             .font(.caption)
                             .foregroundStyle(.secondary)
@@ -117,7 +114,7 @@ struct FavoritesView: View {
         } header: {
             Label("所有最愛", systemImage: "heart.fill")
                 .font(.subheadline)
-                .foregroundStyle(accent)
+                .foregroundStyle(warm)
                 .textCase(nil)
         } footer: {
             Text("左滑刪除餐廳・所有最愛都會加入扭蛋機")
@@ -129,9 +126,9 @@ struct FavoritesView: View {
         HStack(spacing: 12) {
             Text(restaurant.emoji)
                 .font(.title2)
-                .frame(width: 42, height: 42)
-                .background(accent.opacity(0.1))
-                .clipShape(RoundedRectangle(cornerRadius: 10))
+                .frame(width: 44, height: 44)
+                .background(warm.opacity(0.1))
+                .clipShape(Circle())
 
             Button {
                 editingRestaurant = restaurant
@@ -154,7 +151,7 @@ struct FavoritesView: View {
                                 .font(.caption)
                                 .lineLimit(1)
                         }
-                        .foregroundStyle(accent.opacity(0.8))
+                        .foregroundStyle(warm.opacity(0.8))
                     }
                 }
             }
@@ -167,7 +164,7 @@ struct FavoritesView: View {
             } label: {
                 Image(systemName: "map")
                     .font(.title3)
-                    .foregroundStyle(accent)
+                    .foregroundStyle(warm)
             }
             .buttonStyle(.plain)
         }

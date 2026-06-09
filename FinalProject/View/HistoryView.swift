@@ -4,11 +4,12 @@ struct HistoryView: View {
     @Environment(FavoritesStore.self) private var store
     @State private var showClearConfirm = false
 
-    private let accent = Color(red: 1.0, green: 0.38, blue: 0.18)
+    private let warm = Color(red: 0.55, green: 0.42, blue: 0.32)
+    private let sand = Color(red: 0.82, green: 0.76, blue: 0.68)
 
     var body: some View {
         ZStack {
-            Color(red: 0.99, green: 0.97, blue: 0.94).ignoresSafeArea()
+            Color(red: 0.98, green: 0.96, blue: 0.92).ignoresSafeArea()
 
             if store.history.isEmpty {
                 emptyState
@@ -54,11 +55,11 @@ struct HistoryView: View {
 
     private var emptyState: some View {
         VStack(spacing: 20) {
-            Text("🎰")
-                .font(.system(size: 64))
+            Image(systemName: "clock")
+                .font(.system(size: 48, weight: .ultraLight))
+                .foregroundStyle(warm)
             Text("還沒有抽選紀錄")
-                .font(.title3)
-                .fontWeight(.bold)
+                .font(.system(size: 18, weight: .light))
             Text("去轉一次轉盤，紀錄就會出現在這裡")
                 .font(.subheadline)
                 .foregroundStyle(.secondary)
@@ -69,9 +70,9 @@ struct HistoryView: View {
 
     private func sectionHeader(_ title: String) -> some View {
         Text(title)
-            .font(.subheadline)
-            .fontWeight(.semibold)
-            .foregroundStyle(accent)
+            .font(.system(size: 12, weight: .medium))
+            .foregroundStyle(warm)
+            .tracking(1)
             .textCase(nil)
     }
 
@@ -80,7 +81,7 @@ struct HistoryView: View {
             Text(record.restaurant.emoji)
                 .font(.title2)
                 .frame(width: 44, height: 44)
-                .background(accent.opacity(0.1))
+                .background(sand.opacity(0.4))
                 .clipShape(RoundedRectangle(cornerRadius: 10))
 
             VStack(alignment: .leading, spacing: 3) {
