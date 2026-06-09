@@ -1,5 +1,6 @@
 import SwiftUI
 import CoreLocation
+import AudioToolbox
 
 // MARK: - WheelView
 
@@ -70,6 +71,7 @@ struct WheelView: View {
     @State private var showCalendarSheet = false
     @State private var handleRotation: Double = 0
     @State private var machineOffset: CGFloat = 0
+    @State private var loadingBounce = false
     @State private var capsuleXOffset: CGFloat = 54
     @State private var capsuleYOffset: CGFloat = 288
     @State private var capsuleScale: CGFloat = 0.35
@@ -241,8 +243,8 @@ struct WheelView: View {
                 }
                 .shadow(color: .black.opacity(0.14), radius: 16, y: 8)
 
-            ForEach(Array(filledCapsules.enumerated()), id: \.offset) { index, restaurant in
-                miniCapsule(restaurant: restaurant, index: index)
+            ForEach(0..<capsuleCount, id: \.self) { index in
+                animatedCapsule(index: index)
             }
 
             Circle()
@@ -258,6 +260,46 @@ struct WheelView: View {
                 .offset(x: 62, y: -18)
         }
         .clipShape(Circle())
+        .onAppear {
+            startLoadingAnimation()
+        }
+    }
+
+    private static let capsulePositions: [CGPoint] = [
+        CGPoint(x: -62, y: 44), CGPoint(x: -22, y: 58), CGPoint(x: 24, y: 48),
+        CGPoint(x: 62, y: 30), CGPoint(x: -66, y: 4), CGPoint(x: -18, y: 14),
+        CGPoint(x: 30, y: 2), CGPoint(x: 66, y: -12), CGPoint(x: -66, y: -38),
+        CGPoint(x: -24, y: -54), CGPoint(x: 20, y: -48), CGPoint(x: 58, y: -54),
+        CGPoint(x: -2, y: -16), CGPoint(x: -42, y: 84), CGPoint(x: 42, y: 78),
+        CGPoint(x: 0, y: 86)
+    ]
+
+    private func animatedCapsule(index: Int) -> some View {
+        let point = Self.capsulePositions[index % Self.capsulePositions.count]
+        let baseAngle = Double((index * 23) % 52) - 26
+        let isLoaded = !filledCapsules.isEmpty
+
+        let phase = Double(index) / Double(capsuleCount)
+        let jiggleX: CGFloat = loadingBounce
+            ? CGFloat(sin(phase * .pi * 2)) * 5
+            : CGFloat(sin(phase * .pi * 2 + .pi)) * 5
+        let jiggleY: CGFloat = loadingBounce
+            ? CGFloat(cos(phase * .pi * 3)) * 4
+            : CGFloat(cos(phase * .pi * 3 + .pi)) * 4
+        let tiltJiggle = loadingBounce ? 6.0 : -6.0
+
+        return ZStack {
+            Capsule()
+                .fill(capsuleColor(for: index).opacity(isLoaded ? 0.94 : 0.4))
+                .frame(width: 48, height: 32)
+
+            Capsule()
+                .fill(Color.white.opacity(0.18))
+                .frame(width: 48, height: 15)
+                .offset(y: -8)
+        }
+        .rotationEffect(.degrees(baseAngle + tiltJiggle))
+        .offset(x: point.x + jiggleX, y: point.y + jiggleY)
     }
 
     private var neckRing: some View {
@@ -368,32 +410,6 @@ struct WheelView: View {
             .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
     }
 
-    private func miniCapsule(restaurant _: Restaurant, index: Int) -> some View {
-        let positions: [CGPoint] = [
-            CGPoint(x: -62, y: 44), CGPoint(x: -22, y: 58), CGPoint(x: 24, y: 48),
-            CGPoint(x: 62, y: 30), CGPoint(x: -66, y: 4), CGPoint(x: -18, y: 14),
-            CGPoint(x: 30, y: 2), CGPoint(x: 66, y: -12), CGPoint(x: -66, y: -38),
-            CGPoint(x: -24, y: -54), CGPoint(x: 20, y: -48), CGPoint(x: 58, y: -54),
-            CGPoint(x: -2, y: -16), CGPoint(x: -42, y: 84), CGPoint(x: 42, y: 78),
-            CGPoint(x: 0, y: 86)
-        ]
-        let point = positions[index % positions.count]
-        let angle = Double((index * 23) % 52) - 26
-
-        return ZStack {
-            Capsule()
-                .fill(capsuleColor(for: index).opacity(0.94))
-                .frame(width: 48, height: 32)
-
-            Capsule()
-                .fill(Color.white.opacity(0.18))
-                .frame(width: 48, height: 15)
-                .offset(y: -8)
-        }
-        .rotationEffect(.degrees(angle))
-        .offset(x: point.x, y: point.y)
-    }
-
     private func prizeCapsule(restaurant: Restaurant) -> some View {
 
         ZStack {
@@ -493,7 +509,20 @@ struct WheelView: View {
                         Button {
                             showCalendarSheet = true
                         } label: {
-                            Label("加入行事曆", systemImage: "calendar.badge.plus")
+                            Label("行事曆", systemImage: "calendar.badge.plus")
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 12)
+                                .background(Color.white)
+                                .foregroundStyle(.primary)
+                                .clipShape(RoundedRectangle(cornerRadius: 14))
+                                .shadow(color: .black.opacity(0.06), radius: 6, y: 3)
+                        }
+                        .buttonStyle(.plain)
+
+                        ShareLink(item: shareText(for: restaurant)) {
+                            Label("分享", systemImage: "square.and.arrow.up")
                                 .font(.subheadline)
                                 .fontWeight(.semibold)
                                 .frame(maxWidth: .infinity)
@@ -565,6 +594,23 @@ struct WheelView: View {
 
     // MARK: - Logic
 
+    private func startLoadingAnimation() {
+        withAnimation(.easeInOut(duration: 1.5).repeatForever(autoreverses: true)) {
+            loadingBounce = true
+        }
+    }
+
+    private func shareText(for restaurant: Restaurant) -> String {
+        let price = String(repeating: "$", count: restaurant.priceLevel)
+        var text = "🎰 今天吃什麼？扭蛋抽到了！\n\n"
+        text += "\(restaurant.emoji) \(restaurant.name)\n"
+        text += "📂 \(restaurant.category)　💰 \(price)\n"
+        if let url = restaurant.googleMapsSearchURL {
+            text += "\n📍 \(url.absoluteString)"
+        }
+        return text
+    }
+
     private func openGoogleMaps(for restaurant: Restaurant) {
         var components = URLComponents(string: "https://www.google.com/maps/dir/")!
         components.queryItems = [
@@ -595,15 +641,27 @@ struct WheelView: View {
         capsuleOpacity = 0
 
         Task { @MainActor in
-            withAnimation(.easeInOut(duration: 0.1).repeatCount(8, autoreverses: true)) {
+            withAnimation(.easeInOut(duration: 0.1).repeatCount(14, autoreverses: true)) {
                 machineOffset = 6
             }
-            withAnimation(.easeInOut(duration: 0.75)) {
-                handleRotation += 360
+            withAnimation(.easeInOut(duration: 1.5)) {
+                handleRotation += 720
             }
 
-            try? await Task.sleep(for: .milliseconds(760))
+            // Knob turn — ratchet clicks + vibration
+            for i in 0..<10 {
+                AudioServicesPlaySystemSound(1104)
+                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                let delay = 80 + i * 15
+                try? await Task.sleep(for: .milliseconds(delay))
+            }
+
+            try? await Task.sleep(for: .milliseconds(300))
             machineOffset = 0
+
+            // Capsule drops out — thunk
+            AudioServicesPlaySystemSound(1306)
+            UIImpactFeedbackGenerator(style: .heavy).impactOccurred()
 
             withAnimation(.spring(response: 0.42, dampingFraction: 0.72)) {
                 capsuleOpacity = 1
@@ -618,6 +676,11 @@ struct WheelView: View {
             }
 
             try? await Task.sleep(for: .milliseconds(120))
+
+            // Result reveal — success chime
+            AudioServicesPlaySystemSound(1025)
+            UINotificationFeedbackGenerator().notificationOccurred(.success)
+
             store.addToHistory(result)
             isSpinning = false
             withAnimation {
