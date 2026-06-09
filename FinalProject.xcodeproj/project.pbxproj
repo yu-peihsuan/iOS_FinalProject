@@ -10,9 +10,22 @@
 		CEDC68A82FB30ADF00488D24 /* FinalProject.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = FinalProject.app; sourceTree = BUILT_PRODUCTS_DIR; };
 /* End PBXFileReference section */
 
+/* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
+		CE0713C32FD7DFFA00A59E36 /* Exceptions for "FinalProject" folder in "FinalProject" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				Info.plist,
+			);
+			target = CEDC68A72FB30ADF00488D24 /* FinalProject */;
+		};
+/* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
+
 /* Begin PBXFileSystemSynchronizedRootGroup section */
 		CEDC68AA2FB30ADF00488D24 /* FinalProject */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
+			exceptions = (
+				CE0713C32FD7DFFA00A59E36 /* Exceptions for "FinalProject" folder in "FinalProject" target */,
+			);
 			path = FinalProject;
 			sourceTree = "<group>";
 		};
@@ -253,7 +266,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FinalProject/Info.plist;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "讓「今天吃什麼」把你選好的餐廳加入行事曆，方便安排用餐計畫。";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "讓​「今天吃什麼​」取得你的位置​，搜尋附近的餐廳。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
@@ -285,7 +300,9 @@
 				CURRENT_PROJECT_VERSION = 1;
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = YES;
+				INFOPLIST_FILE = FinalProject/Info.plist;
 				INFOPLIST_KEY_NSCalendarsFullAccessUsageDescription = "讓「今天吃什麼」把你選好的餐廳加入行事曆，方便安排用餐計畫。";
+				INFOPLIST_KEY_NSLocationWhenInUseUsageDescription = "讓​「今天吃什麼​」取得你的位置​，搜尋附近的餐廳。";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;

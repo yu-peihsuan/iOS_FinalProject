@@ -4,7 +4,7 @@ struct ContentView: View {
 
     @State private var selectedMeal = "晚餐"
     @State private var selectedCategories: Set<String> = ["日式"]
-    @State private var budget: Double = 300
+    @State private var maxPriceLevel: Int = 2
     @State private var distance: Double = 3
 
     private let meals = ["早餐", "午餐", "晚餐", "點心"]
@@ -238,21 +238,40 @@ extension ContentView {
             VStack(alignment: .leading, spacing: 10) {
 
                 HStack {
-
                     Text("預算上限")
                         .font(.subheadline)
 
                     Spacer()
 
-                    Text("$\(Int(budget))")
+                    Text(priceLevelLabel(maxPriceLevel))
                         .font(.subheadline)
                         .fontWeight(.bold)
                         .foregroundStyle(accent)
-                        .monospacedDigit()
                 }
 
-                Slider(value: $budget, in: 100...1000, step: 50)
-                    .tint(accent)
+                HStack(spacing: 8) {
+                    ForEach(1...4, id: \.self) { level in
+                        Button {
+                            maxPriceLevel = level
+                        } label: {
+                            Text(String(repeating: "$", count: level))
+                                .font(.subheadline)
+                                .fontWeight(.semibold)
+                                .frame(maxWidth: .infinity)
+                                .padding(.vertical, 10)
+                                .background(
+                                    level <= maxPriceLevel
+                                    ? accent
+                                    : Color.gray.opacity(0.08)
+                                )
+                                .foregroundStyle(
+                                    level <= maxPriceLevel ? .white : .primary
+                                )
+                                .clipShape(RoundedRectangle(cornerRadius: 10))
+                        }
+                        .buttonStyle(.plain)
+                    }
+                }
             }
         }
         .padding(18)
@@ -263,7 +282,7 @@ extension ContentView {
 
     private var spinButton: some View {
 
-        NavigationLink(destination: WheelView(selectedCategories: selectedCategories)) {
+        NavigationLink(destination: WheelView(selectedCategories: selectedCategories, selectedMeal: selectedMeal, maxPriceLevel: maxPriceLevel, maxDistance: distance)) {
 
             HStack(spacing: 10) {
 
@@ -291,6 +310,16 @@ extension ContentView {
             .shadow(color: accent.opacity(0.45), radius: 12, y: 6)
         }
         .buttonStyle(.plain)
+    }
+
+    private func priceLevelLabel(_ level: Int) -> String {
+        switch level {
+        case 1: return "$ 平價"
+        case 2: return "$$ 中等"
+        case 3: return "$$$ 偏貴"
+        case 4: return "$$$$ 高價"
+        default: return ""
+        }
     }
 }
 

@@ -1,4 +1,5 @@
 import SwiftUI
+import CoreLocation
 
 // MARK: - WheelView
 
@@ -8,17 +9,59 @@ struct WheelView: View {
     @Environment(\.openURL) private var openURL
     @Environment(FavoritesStore.self) private var store
 
-    let selectedCategories: Set<String>
+    var selectedCategories: Set<String> = []
+    var selectedMeal: String = ""
+    var maxPriceLevel: Int = 4
+    var maxDistance: Double = 10
+
+    var fixedRestaurants: [Restaurant]? = nil
+
+    @State private var locationManager = LocationManager()
+    @State private var nearbyRestaurants: [Restaurant] = []
+    @State private var isLoadingNearby = true
+
+    private var useFixedMode: Bool { fixedRestaurants != nil }
 
     private var wheelRestaurants: [Restaurant] {
-        let source = store.wantToEat.isEmpty ? Restaurant.defaults : store.wantToEat
-        let filtered = source.filter { selectedCategories.contains($0.category) }
-
-        if filtered.isEmpty {
-            return Restaurant.defaults.filter { selectedCategories.contains($0.category) }
+        if let fixed = fixedRestaurants {
+            return fixed
         }
 
-        return filtered
+        if !store.wantToEat.isEmpty {
+            let filtered = store.wantToEat.filter { restaurant in
+                selectedCategories.contains(restaurant.category)
+                && restaurant.mealTypes.contains(selectedMeal)
+                && restaurant.priceLevel <= maxPriceLevel
+                && restaurant.distance <= maxDistance
+            }
+            if !filtered.isEmpty { return filtered }
+
+            let categoryOnly = store.wantToEat.filter { selectedCategories.contains($0.category) }
+            if !categoryOnly.isEmpty { return categoryOnly }
+        }
+
+        if !nearbyRestaurants.isEmpty {
+            let filtered = nearbyRestaurants.filter { restaurant in
+                restaurant.priceLevel <= maxPriceLevel
+                && restaurant.distance <= maxDistance
+            }
+            if !filtered.isEmpty { return filtered }
+            return nearbyRestaurants
+        }
+
+        return []
+    }
+
+    private let capsuleCount = 16
+
+    private var filledCapsules: [Restaurant] {
+        let source = wheelRestaurants
+        guard !source.isEmpty else { return [] }
+        var result: [Restaurant] = []
+        while result.count < capsuleCount {
+            result.append(contentsOf: source)
+        }
+        return Array(result.prefix(capsuleCount))
     }
 
     @State private var selectedRestaurant: Restaurant? = nil
@@ -68,6 +111,44 @@ struct WheelView: View {
                 CalendarSheet(restaurant: restaurant)
             }
         }
+        .task {
+            if useFixedMode {
+                isLoadingNearby = false
+            } else {
+                await loadNearbyRestaurants()
+            }
+        }
+    }
+
+    private func loadNearbyRestaurants() async {
+        locationManager.request()
+        print("[DEBUG] 開始定位...")
+
+        var attempts = 0
+        while locationManager.coordinate == nil && !locationManager.failed && attempts < 50 {
+            try? await Task.sleep(for: .milliseconds(100))
+            attempts += 1
+        }
+
+        if locationManager.failed {
+            print("[DEBUG] 定位失敗 — 請確認已加入 Location When In Use Usage Description 並允許定位權限")
+        }
+
+        if let coord = locationManager.coordinate {
+            print("[DEBUG] 定位成功: \(coord.latitude), \(coord.longitude)")
+            let radiusMeters = Int(maxDistance * 1000)
+            nearbyRestaurants = await PlacesService.searchAll(
+                location: coord,
+                categories: selectedCategories,
+                meal: selectedMeal,
+                radiusMeters: radiusMeters
+            )
+            print("[DEBUG] API 回傳 \(nearbyRestaurants.count) 間餐廳")
+        } else {
+            print("[DEBUG] 未取得座標（等待 \(attempts) 次後逾時）")
+        }
+
+        isLoadingNearby = false
     }
 
     // MARK: - Sub-views
@@ -160,7 +241,7 @@ struct WheelView: View {
                 }
                 .shadow(color: .black.opacity(0.14), radius: 16, y: 8)
 
-            ForEach(Array(wheelRestaurants.prefix(16).enumerated()), id: \.offset) { index, restaurant in
+            ForEach(Array(filledCapsules.enumerated()), id: \.offset) { index, restaurant in
                 miniCapsule(restaurant: restaurant, index: index)
             }
 
@@ -287,7 +368,7 @@ struct WheelView: View {
             .shadow(color: .black.opacity(0.15), radius: 10, y: 5)
     }
 
-    private func miniCapsule(restaurant: Restaurant, index: Int) -> some View {
+    private func miniCapsule(restaurant _: Restaurant, index: Int) -> some View {
         let positions: [CGPoint] = [
             CGPoint(x: -62, y: 44), CGPoint(x: -22, y: 58), CGPoint(x: 24, y: 48),
             CGPoint(x: 62, y: 30), CGPoint(x: -66, y: 4), CGPoint(x: -18, y: 14),
@@ -308,9 +389,6 @@ struct WheelView: View {
                 .fill(Color.white.opacity(0.18))
                 .frame(width: 48, height: 15)
                 .offset(y: -8)
-
-            Text(restaurant.emoji)
-                .font(.system(size: 15))
         }
         .rotationEffect(.degrees(angle))
         .offset(x: point.x, y: point.y)
@@ -444,7 +522,7 @@ struct WheelView: View {
 
             HStack(spacing: 10) {
 
-                if isSpinning {
+                if isSpinning || isLoadingNearby {
                     ProgressView()
                         .tint(.white)
                         .scaleEffect(0.85)
@@ -453,7 +531,7 @@ struct WheelView: View {
                         .font(.title3)
                 }
 
-                Text(isSpinning ? "抽選中..." : (showResult ? "再抽一顆" : "抽一顆扭蛋"))
+                Text(isLoadingNearby ? "搜尋附近餐廳..." : wheelRestaurants.isEmpty ? (useFixedMode ? "清單是空的" : "找不到附近餐廳") : (isSpinning ? "抽選中..." : (showResult ? "再抽一顆" : "抽一顆扭蛋")))
                     .font(.title3)
                     .fontWeight(.bold)
             }
@@ -461,7 +539,7 @@ struct WheelView: View {
             .frame(maxWidth: .infinity)
             .padding(.vertical, 16)
             .background {
-                if isSpinning {
+                if isSpinning || isLoadingNearby {
                     RoundedRectangle(cornerRadius: 18)
                         .fill(Color.gray)
                 } else {
@@ -476,19 +554,29 @@ struct WheelView: View {
                 }
             }
             .shadow(
-                color: accent.opacity(isSpinning ? 0 : 0.4),
+                color: accent.opacity((isSpinning || isLoadingNearby) ? 0 : 0.4),
                 radius: 10,
                 y: 5
             )
         }
-        .disabled(isSpinning || wheelRestaurants.isEmpty)
+        .disabled(isSpinning || isLoadingNearby || wheelRestaurants.isEmpty)
         .buttonStyle(.plain)
     }
 
     // MARK: - Logic
 
     private func openGoogleMaps(for restaurant: Restaurant) {
-        if let url = restaurant.googleMapsSearchURL {
+        var components = URLComponents(string: "https://www.google.com/maps/dir/")!
+        components.queryItems = [
+            URLQueryItem(name: "api", value: "1"),
+            URLQueryItem(name: "destination", value: restaurant.name),
+        ]
+        if let coord = locationManager.coordinate {
+            components.queryItems?.append(
+                URLQueryItem(name: "origin", value: "\(coord.latitude),\(coord.longitude)")
+            )
+        }
+        if let url = components.url {
             openURL(url)
         }
     }
@@ -552,6 +640,6 @@ struct WheelView: View {
 }
 
 #Preview {
-    WheelView(selectedCategories: ["日式", "台式"])
+    WheelView(selectedCategories: ["日式", "台式"], selectedMeal: "晚餐", maxPriceLevel: 2, maxDistance: 3.0)
         .environment(FavoritesStore())
 }

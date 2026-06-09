@@ -16,7 +16,7 @@ struct FavoritesView: View {
                 emptyState
             } else {
                 List {
-                    wantToEatSection
+                    favoriteSpinSection
                     favoritesSection
                 }
                 .listStyle(.insetGrouped)
@@ -74,32 +74,35 @@ struct FavoritesView: View {
         .padding()
     }
 
-    @ViewBuilder
-    private var wantToEatSection: some View {
+    private var favoriteSpinSection: some View {
         Section {
-            if store.wantToEat.isEmpty {
-                Label("從下方最愛清單點 ○ 加入轉盤", systemImage: "info.circle")
-                    .font(.footnote)
-                    .foregroundStyle(.secondary)
-                    .listRowBackground(Color.clear)
-            } else {
-                ForEach(store.wantToEat) { restaurant in
-                    restaurantRow(restaurant, showToggle: false)
+            NavigationLink(destination: WheelView(fixedRestaurants: store.favorites)) {
+                HStack(spacing: 12) {
+                    ZStack {
+                        Circle()
+                            .fill(
+                                LinearGradient(
+                                    colors: [accent, Color(red: 0.85, green: 0.22, blue: 0.35)],
+                                    startPoint: .topLeading,
+                                    endPoint: .bottomTrailing
+                                )
+                            )
+                            .frame(width: 44, height: 44)
+                        Image(systemName: "sparkles")
+                            .font(.title3)
+                            .foregroundStyle(.white)
+                    }
+                    VStack(alignment: .leading, spacing: 2) {
+                        Text("從最愛抽扭蛋")
+                            .font(.subheadline)
+                            .fontWeight(.bold)
+                        Text("從 \(store.favorites.count) 間最愛餐廳中隨機抽選")
+                            .font(.caption)
+                            .foregroundStyle(.secondary)
+                    }
+                    Spacer()
                 }
-                .onDelete { store.removeFromWantToEat(at: $0) }
-            }
-        } header: {
-            Label("轉盤餐廳清單", systemImage: "arrow.triangle.2.circlepath")
-                .font(.subheadline)
-                .foregroundStyle(accent)
-                .textCase(nil)
-        } footer: {
-            if store.wantToEat.isEmpty {
-                Text("若清單為空，轉盤會使用預設餐廳")
-                    .font(.caption)
-            } else {
-                Text("共 \(store.wantToEat.count) 間・轉盤將只顯示這些餐廳")
-                    .font(.caption)
+                .padding(.vertical, 4)
             }
         }
     }
@@ -108,7 +111,7 @@ struct FavoritesView: View {
     private var favoritesSection: some View {
         Section {
             ForEach(store.favorites) { restaurant in
-                restaurantRow(restaurant, showToggle: true)
+                restaurantRow(restaurant)
             }
             .onDelete { store.removeFromFavorites(at: $0) }
         } header: {
@@ -117,12 +120,12 @@ struct FavoritesView: View {
                 .foregroundStyle(accent)
                 .textCase(nil)
         } footer: {
-            Text("左滑刪除餐廳・點 ○ 加入轉盤清單")
+            Text("左滑刪除餐廳・所有最愛都會加入扭蛋機")
                 .font(.caption)
         }
     }
 
-    private func restaurantRow(_ restaurant: Restaurant, showToggle: Bool) -> some View {
+    private func restaurantRow(_ restaurant: Restaurant) -> some View {
         HStack(spacing: 12) {
             Text(restaurant.emoji)
                 .font(.title2)
@@ -167,18 +170,6 @@ struct FavoritesView: View {
                     .foregroundStyle(accent)
             }
             .buttonStyle(.plain)
-
-            if showToggle {
-                let isWanted = store.isWantToEat(restaurant)
-                Button {
-                    store.toggleWantToEat(restaurant)
-                } label: {
-                    Image(systemName: isWanted ? "checkmark.circle.fill" : "circle")
-                        .font(.title3)
-                        .foregroundStyle(isWanted ? accent : Color.gray.opacity(0.35))
-                }
-                .buttonStyle(.plain)
-            }
         }
         .padding(.vertical, 4)
     }
