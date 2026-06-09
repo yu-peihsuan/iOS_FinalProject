@@ -28,19 +28,6 @@ struct WheelView: View {
             return fixed
         }
 
-        if !store.wantToEat.isEmpty {
-            let filtered = store.wantToEat.filter { restaurant in
-                selectedCategories.contains(restaurant.category)
-                && restaurant.mealTypes.contains(selectedMeal)
-                && restaurant.priceLevel <= maxPriceLevel
-                && restaurant.distance <= maxDistance
-            }
-            if !filtered.isEmpty { return filtered }
-
-            let categoryOnly = store.wantToEat.filter { selectedCategories.contains($0.category) }
-            if !categoryOnly.isEmpty { return categoryOnly }
-        }
-
         if !nearbyRestaurants.isEmpty {
             let filtered = nearbyRestaurants.filter { restaurant in
                 restaurant.priceLevel <= maxPriceLevel
@@ -124,7 +111,6 @@ struct WheelView: View {
 
     private func loadNearbyRestaurants() async {
         locationManager.request()
-        print("[DEBUG] 開始定位...")
 
         var attempts = 0
         while locationManager.coordinate == nil && !locationManager.failed && attempts < 50 {
@@ -132,12 +118,7 @@ struct WheelView: View {
             attempts += 1
         }
 
-        if locationManager.failed {
-            print("[DEBUG] 定位失敗 — 請確認已加入 Location When In Use Usage Description 並允許定位權限")
-        }
-
         if let coord = locationManager.coordinate {
-            print("[DEBUG] 定位成功: \(coord.latitude), \(coord.longitude)")
             let radiusMeters = Int(maxDistance * 1000)
             nearbyRestaurants = await PlacesService.searchAll(
                 location: coord,
@@ -145,9 +126,6 @@ struct WheelView: View {
                 meal: selectedMeal,
                 radiusMeters: radiusMeters
             )
-            print("[DEBUG] API 回傳 \(nearbyRestaurants.count) 間餐廳")
-        } else {
-            print("[DEBUG] 未取得座標（等待 \(attempts) 次後逾時）")
         }
 
         isLoadingNearby = false

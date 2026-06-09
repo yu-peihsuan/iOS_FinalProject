@@ -157,7 +157,7 @@ enum PlacesService {
                     }
                 }
             } catch {
-                print("[DEBUG] Distance Matrix API 失敗: \(error.localizedDescription)")
+                // Distance Matrix API error — skip this batch
             }
         }
 
